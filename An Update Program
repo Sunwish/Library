@@ -1,0 +1,138 @@
+An Update Program. Show the main function.
+
+.版本 2
+
+.子程序 GoDownBody, 逻辑型
+.参数 lpUrl, 文本型, , 下载地址
+.参数 lpDirectory, 文本型, , 保存目录，例如:D:\
+.参数 lpSeveFile, 文本型, , 保存文件名
+.参数 lpCallBack, 整数型, 可空, 回调指针有4个参数:自定义参数(整数型)，文件总大小(长整数型 [参考])，当前下载大小(长整数型 [参考])，当前下载用时(长整数型 [参考])。
+.参数 lpParam, 整数型, 可空, 自定义参数
+.局部变量 dwTimeSx, FILETIME_SIZE
+.局部变量 dwTimeEx, FILETIME_SIZE
+.局部变量 dwSizeEx, 双精度小数型
+.局部变量 dwSizelen, 双精度小数型, , , 当前大小
+.局部变量 dwSizeTime, 双精度小数型, , , 当前时间
+.局部变量 dwData, 字节集
+.局部变量 lpAddress, 整数型
+.局部变量 dwhFile, 整数型, , , 文件句柄
+.局部变量 dwhMom, 整数型
+.局部变量 dwlen, 整数型
+.局部变量 dwSize, 整数型
+.局部变量 sdwTimeSx, FILETIME_SIZE
+.局部变量 sdwTimeEx, FILETIME_SIZE
+.局部变量 slpAddress, 整数型
+.局部变量 slqAddress, 整数型
+.局部变量 sdwSizelen, 整数型
+.局部变量 sdwSizeExA, 整数型, , , 总长度
+.局部变量 sdwSizeRem, 长整数型, , , 余数
+.局部变量 sdwSizeTat, 长整数型
+.局部变量 sdwSizeTime, 长整数型
+.局部变量 si, 整数型
+
+.如果真 (API_PathIsDirectory (lpDirectory) ＝ 16)
+    lpDirectory ＝ 选择 (取文本右边 (lpDirectory, 1) ＝ “\”, lpDirectory, lpDirectory ＋ “\”)
+    dwSize ＝ 选择 (到小写 (取文本左边 (lpUrl, 5)) ＝ “https”, 8388608, 0)
+    .如果真 (hSession ＝ 0)
+        hSession ＝ API_WinHttpOpen (0, 选择 (dwParam [1] ＝ {  }, 1, 3), dwParam [1], 0, 0)
+    .如果真结束
+    .如果真 (hSession ＝ 0)
+        返回 (假)
+    .如果真结束
+    .如果真 (hConnect ≠ 0)
+        API_WinHttpCloseHandle (hConnect)
+    .如果真结束
+    hConnect ＝ API_WinHttpConnect (hSession, AnsiToUnicode (Geturldominame (lpUrl)), Geturlports (lpUrl), 0)
+    .如果真 (hConnect ＝ 0)
+        API_WinHttpCloseHandle (hSession)
+        返回 (假)
+    .如果真结束
+    .如果真 (hRequest ≠ 0)
+        API_WinHttpCloseHandle (hRequest)
+    .如果真结束
+    hRequest ＝ API_WinHttpOpenRequest (hConnect, AnsiToUnicode (“GET”), AnsiToUnicode (Geturladdress (lpUrl)), 0, 0, 0, dwSize)
+    .如果真 (hRequest ＝ 0)
+        API_WinHttpCloseHandle (hSession)
+        API_WinHttpCloseHandle (hConnect)
+        返回 (假)
+    .如果真结束
+    API_WinHttpAddRequestHeaders (hRequest, AnsiToUnicode (“lpAgren” ＋ 字符 (58) ＋ “*/*”), -1, -1879048192)
+    API_WinHttpAddRequestHeaders (hRequest, AnsiToUnicode (“User-Agent” ＋ 字符 (58) ＋ “ Mozilla/5.0 (Windows NT 6.1; WOW64; rv:23.0) Gecko/20100101 Firefox/23.0”), -1, -1879048192)
+    连续赋值 ({  }, dwParam [6], dwParam [7])
+    .如果真 (dwParam [2] ≠ {  })
+        API_WinHttpSetCredentials (hRequest, 1, 1, dwParam [2], dwParam [3], 0)
+    .如果真结束
+    .如果真 (dwParam [4] ≠ {  })
+        API_WinHttpSetCredentials (hRequest, 0, 1, dwParam [4], dwParam [5], 0)
+    .如果真结束
+    slpAddress ＝ GetAddrBin ({  })
+    sdwSizeExA ＝ GetIntAddress (slpAddress － 4)
+    sdwSizeRem ＝ sdwSizeExA ％ 2048
+    .如果 (API_WinHttpSendRequest (hRequest, 0, -1, 指针到字节集 (slpAddress, sdwSizeRem), sdwSizeRem, sdwSizeExA, 0))
+        .如果真 (lpCallBack ＞ 0)
+            slqAddress ＝ API_GlobalAlloc (64, 64)
+            CopyInt (slqAddress, lpCallBack, 4)
+            CopyInt (slqAddress ＋ 4, lpParam, 4)
+            CopyInt (slqAddress ＋ 8, sdwSizeExA, 4)
+            CopyInt (slqAddress ＋ 28, API_GetCurrentThreadId (), 4)
+            API_GetSystemTimeAsFileTime (sdwTimeSx)
+            API_CloseHandle (API_CreateThread (0, 0, 到数值 (&THTREAD_POSTHOOK_PROC), slqAddress, 0, 0))
+        .如果真结束
+        .计次循环首 (sdwSizeExA ÷ 2048, si)
+            sdwSizeTat ＝ sdwSizeRem ＋ (si － 1) × 2048
+            .如果真 (lpCallBack ＞ 0)
+                API_GetSystemTimeAsFileTime (sdwTimeEx)
+                sdwSizeTime ＝ sdwSizeTime ＋ (sdwTimeEx.dwLowDateTime － sdwTimeSx.dwLowDateTime) ÷ 10000
+                CopyLong (slqAddress ＋ 12, sdwSizeTat, 8)
+                CopyLong (slqAddress ＋ 20, sdwSizeTime, 8)
+                sdwTimeSx.dwLowDateTime ＝ sdwTimeEx.dwLowDateTime
+            .如果真结束
+            API_WinHttpWriteData (hRequest, 指针到字节集 (slpAddress ＋ sdwSizeTat, 2048), 2048, 0)
+        .计次循环尾 ()
+        .如果真 (lpCallBack ＞ 0)
+            CopyLong (slqAddress ＋ 12, -768, 8)
+        .如果真结束
+        API_WinHttpReceiveResponse (hRequest, 0)
+        API_WinHttpQueryHeaders (hRequest, 22, 0, 0, sdwSizelen, 0)
+        dwParam [6] ＝ 取空白字节集 (sdwSizelen)
+        API_WinHttpQueryHeaders (hRequest, 22, 0, GetAddrBin (dwParam [6]), sdwSizelen, 0)
+    .否则
+        返回 (假)
+    .如果结束
+    dwData ＝ 取空白字节集 (5124)
+    dwhMom ＝ GetAddrBin (dwData)
+    dwSizeEx ＝ 到数值 (GetAllResponseHeaders (“Content-Length”))
+    .如果真 (lpCallBack ＞ 0 且 dwSizeEx ＞ 0)
+        lpAddress ＝ API_GlobalAlloc (64, 64)
+        CopyInt (lpAddress, lpCallBack, 4)
+        CopyInt (lpAddress ＋ 4, lpParam, 4)
+        CopyLong (lpAddress ＋ 8, dwSizeEx, 8)
+        CopyInt (lpAddress ＋ 32, API_GetCurrentThreadId (), 4)
+        API_GetSystemTimeAsFileTime (dwTimeSx)
+        API_CloseHandle (API_CreateThread (0, 0, 到数值 (&THTREAD_DOWNHOOK_PROC), lpAddress, 0, lpCallBack))
+    .如果真结束
+    .如果真 (dwSizeEx ＞ 0)
+        dwhFile ＝ API_CreateFile (AnsiToUnicode (lpDirectory ＋ lpSeveFile), 1073741824, 1, 0, 2, 128, 0)
+        .循环判断首 ()
+            .如果真 (API_WinHttpReadData (hRequest, dwhMom, 5120, dwlen))
+                API_WriteFile (dwhFile, 指针到字节集 (dwhMom, dwlen), dwlen, 0, 0)
+                .如果真 (lpCallBack ＞ 0)
+                    API_GetSystemTimeAsFileTime (dwTimeEx)
+                    dwSizeTime ＝ dwSizeTime ＋ (dwTimeEx.dwLowDateTime － dwTimeSx.dwLowDateTime) ÷ 10000
+                    dwSizelen ＝ dwSizelen ＋ dwlen
+                    CopyLong (lpAddress ＋ 16, dwSizelen, 8)
+                    CopyLong (lpAddress ＋ 24, dwSizeTime, 8)
+                    dwTimeSx.dwLowDateTime ＝ dwTimeEx.dwLowDateTime
+                .如果真结束
+
+            .如果真结束
+
+        .循环判断尾 (dwlen ＞ 0)
+        .如果真 (lpCallBack ＞ 0)
+            CopyLong (lpAddress ＋ 16, -768, 8)
+        .如果真结束
+        API_CloseHandle (dwhFile)
+    .如果真结束
+
+.如果真结束
+返回 (dwhFile ≠ 0)
